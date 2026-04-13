@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>💩 粑粑大作战</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;user-select:none;}
+body{background:#0f0820;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;padding:16px 0;overflow-x:hidden;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+#gw{width:100%;max-width:400px;margin:0 auto;background:#1a1a2e;border-radius:24px;overflow:hidden;border:2px solid #4a3060;font-family:system-ui,sans-serif;}
+#topbar{background:#2d1b4e;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;}
+.tbtitle{font-size:15px;font-weight:700;color:#ffe066;letter-spacing:1px;}
+.tbinfo{display:flex;gap:12px;}
+.tbitem{text-align:center;}
+.tblabel{font-size:9px;color:#a080c0;display:block;}
+.tbval{font-size:15px;font-weight:700;color:#fff;}
+#scene{position:relative;width:100%;height:420px;overflow:hidden;}
+#bgc,#gc,#darkc{position:absolute;top:0;left:0;}
+#darkc{pointer-events:none;z-index:5;}
+#uilayer{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:6;}
+.overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(12,6,30,0.94);z-index:20;}
+.big-e{font-size:54px;margin-bottom:4px;}
+.stitle{font-size:19px;font-weight:700;color:#ffe066;margin-bottom:4px;letter-spacing:2px;}
+.ssub{font-size:11px;color:#c0a0e0;margin-bottom:14px;text-align:center;line-height:1.8;padding:0 16px;}
+.scene-btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:10px;}
+.sbtn{padding:8px 14px;border-radius:12px;border:none;font-size:13px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.sbtn .sbe{font-size:20px;}
+.sbtn .sbn{font-size:11px;}
+.sbtn .sbd{font-size:10px;opacity:0.8;}
+.sbtn-park{background:#3B6D11;color:#d8f0a0;}
+.sbtn-office{background:#854F0B;color:#ffe8b0;}
+.sbtn-home{background:#791F1F;color:#ffd0d0;}
+.mode-btns{display:flex;gap:10px;}
+.mbtn{padding:10px 18px;border-radius:12px;border:none;font-size:13px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.mbtn-p{background:#c87820;color:#fff8e0;}
+.mbtn-t{background:#2060c0;color:#e0f0ff;}
+.rbtn{background:#4a2080;color:#ffe066;padding:9px 26px;border-radius:12px;border:none;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px;}
+#ctrlbar{background:#2d1b4e;padding:8px 14px;display:flex;gap:10px;}
+.cbtn{flex:1;padding:9px 0;border-radius:10px;border:none;font-size:20px;cursor:pointer;background:#4a2880;color:#fff;font-weight:700;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.cbtn:active{transform:scale(0.95);}
+#hint{background:#2d1b4e;padding:2px 14px 7px;font-size:10px;color:#8060a0;text-align:center;}
+.pill{position:absolute;font-size:11px;font-weight:700;padding:2px 7px;border-radius:8px;background:#ffe066;color:#3a1800;pointer-events:none;animation:fup 0.8s ease forwards;z-index:10;}
+@keyframes fup{0%{opacity:1;transform:translateY(0);}100%{opacity:0;transform:translateY(-34px);}}
+.status-badge{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(30,10,60,0.85);color:#ffe066;font-size:11px;font-weight:700;padding:4px 12px;border-radius:10px;z-index:10;pointer-events:none;animation:fup 1.5s ease forwards;}
+</style>
+</head>
+<body>
+<div id="gw">
+  <div id="topbar">
+    <div class="tbtitle" id="scene-label">💩 粑粑大作战</div>
+    <div class="tbinfo">
+      <div class="tbitem"><span class="tblabel">得分</span><span class="tbval" id="sc">0</span></div>
+      <div class="tbitem"><span class="tblabel">时间</span><span class="tbval" id="ti">-</span></div>
+      <div class="tbitem"><span class="tblabel">角色</span><span class="tbval" id="md">-</span></div>
+    </div>
+  </div>
+  <div id="scene">
+    <canvas id="bgc" width="400" height="420" style="width:100%;height:100%;display:block;"></canvas>
+    <canvas id="gc" width="400" height="420" style="width:100%;height:100%;display:block;"></canvas>
+    <canvas id="darkc" width="400" height="420" style="width:100%;height:100%;display:block;"></canvas>
+    <div id="uilayer"></div>
+
+    <!-- 场景选择 -->
+    <div class="overlay" id="scenescreen">
+      <div class="big-e">🚽</div>
+      <div class="stitle">选择场景</div>
+      <div class="ssub">每个场景难度不同，道具也不一样！</div>
+      <div class="scene-btns">
+        <button class="sbtn sbtn-park" id="btn-park">
+          <span class="sbe">🌳</span><span class="sbn">公园</span><span class="sbd">简单 · 2分钟</span>
+        </button>
+        <button class="sbtn sbtn-office" id="btn-office">
+          <span class="sbe">🏢</span><span class="sbn">办公室</span><span class="sbd">中等 · 1分30秒</span>
+        </button>
+        <button class="sbtn sbtn-home" id="btn-home">
+          <span class="sbe">🏠</span><span class="sbn">家里(夜)</span><span class="sbd">困难 · 2分钟</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 角色选择 -->
+    <div class="overlay" id="modescreen" style="display:none;">
+      <div class="big-e" id="mode-scene-e">🌳</div>
+      <div class="stitle" id="mode-scene-name">公园</div>
+      <div class="ssub" id="mode-scene-desc">悠闲散步突然内急！<br>💩 粑粑：收集厕纸，躲避马桶<br>🚽 马桶：接住粑粑，越多越好</div>
+      <div class="mode-btns">
+        <button class="mbtn mbtn-p" id="btn-poop">💩 我是粑粑</button>
+        <button class="mbtn mbtn-t" id="btn-toilet">🚽 我是马桶</button>
+      </div>
+      <div style="margin-top:10px;">
+        <button class="rbtn" id="btn-back-scene" style="background:#2a1040;font-size:11px;padding:6px 16px;">← 重选场景</button>
+      </div>
+    </div>
+
+    <!-- 结束界面 -->
+    <div class="overlay" id="overscreen" style="display:none;">
+      <div class="big-e" id="oe">😵</div>
+      <div class="stitle" id="ot">游戏结束</div>
+      <div class="ssub" id="om">得分：0</div>
+      <div style="display:flex;gap:8px;">
+        <button class="rbtn" id="btn-restart">再来一局！</button>
+        <button class="rbtn" id="btn-change-scene" style="background:#1a3060;font-size:11px;">换场景</button>
+      </div>
+    </div>
+  </div>
+  <div id="ctrlbar">
+    <button class="cbtn" id="btn-left">◀</button>
+    <button class="cbtn" id="btn-right">▶</button>
+  </div>
+  <div id="hint">← → 左右移动</div>
+</div>
+
+<script>
+// 圆角矩形兼容函数（iOS Safari roundRect polyfill）
+function rrect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+}
+
+var W=400,H=420;
+var bgc=document.getElementById('bgc');
+var gc=document.getElementById('gc');
+var darkc=document.getElementById('darkc');
+var bx=bgc.getContext('2d');
+var cx=gc.getContext('2d');
+var dx=darkc.getContext('2d');
+var scEl=document.getElementById('sc');
+var tiEl=document.getElementById('ti');
+var mdEl=document.getElementById('md');
+var sceneLabel=document.getElementById('scene-label');
+var scenescreen=document.getElementById('scenescreen');
+var modescreen=document.getElementById('modescreen');
+var overscreen=document.getElementById('overscreen');
+var uilayer=document.getElementById('uilayer');
+var hintEl=document.getElementById('hint');
+
+// ── 场景配置 ──────────────────────────────────────
+var SCENES={
+  park:{
+    name:'🌳 公园',
+    emoji:'🌳',
+    desc:'悠闲散步突然内急，找到公共厕所蹲下！',
+    time:120,
+    spdMult:1.0,
+    spawnInterval:1200,
+    darkMode:false,
+    wind:true,
+    wave:false,
+    poolP:[
+      {type:'paper',e:'🧻',w:30,h:30,spd:2.0,pts:15,wt:3},
+      {type:'laxative',e:'💊',w:26,h:26,spd:1.8,pts:20,wt:2},
+      {type:'leaf',e:'🍃',w:28,h:28,spd:1.6,pts:8,wt:3},
+      {type:'bird',e:'🐦',w:30,h:30,spd:2.5,pts:0,wt:1},
+      {type:'plug',e:'🔌',w:28,h:28,spd:1.9,pts:-8,wt:2},
+      {type:'toilet',e:'🚽',w:38,h:38,spd:2.8,pts:-99,wt:1},
+    ],
+    poolT:[
+      {type:'poop',e:'💩',w:36,h:36,spd:2.2,pts:10,wt:4},
+      {type:'paper',e:'🧻',w:30,h:30,spd:1.8,pts:-10,wt:2},
+      {type:'bird',e:'🐦',w:30,h:30,spd:2.5,pts:5,wt:2},
+      {type:'plug',e:'🔌',w:28,h:28,spd:1.8,pts:0,wt:1},
+    ],
+  },
+  office:{
+    name:'🏢 办公室',
+    emoji:'🏢',
+    desc:'开会中途溜去厕所，别被老板发现！',
+    time:90,
+    spdMult:1.5,
+    spawnInterval:900,
+    darkMode:false,
+    wind:false,
+    wave:true,
+    poolP:[
+      {type:'paper',e:'🧻',w:30,h:30,spd:2.5,pts:15,wt:3},
+      {type:'laxative',e:'💊',w:26,h:26,spd:2.0,pts:20,wt:2},
+      {type:'coffee',e:'☕',w:28,h:28,spd:2.2,pts:25,wt:2},
+      {type:'mute',e:'🔕',w:28,h:28,spd:2.0,pts:0,wt:1},
+      {type:'phone',e:'📱',w:28,h:28,spd:2.8,pts:-15,wt:2},
+      {type:'boss',e:'👨‍💼',w:38,h:38,spd:2.5,pts:-99,wt:2},
+      {type:'plug',e:'🔌',w:28,h:28,spd:2.2,pts:-8,wt:2},
+      {type:'toilet',e:'🚽',w:38,h:38,spd:3.2,pts:-99,wt:1},
+    ],
+    poolT:[
+      {type:'poop',e:'💩',w:36,h:36,spd:2.8,pts:10,wt:4},
+      {type:'paper',e:'🧻',w:30,h:30,spd:2.2,pts:-10,wt:2},
+      {type:'phone',e:'📱',w:28,h:28,spd:2.5,pts:-5,wt:2},
+      {type:'boss',e:'👨‍💼',w:38,h:38,spd:2.5,pts:-99,wt:2},
+      {type:'plug',e:'🔌',w:28,h:28,spd:2.0,pts:0,wt:1},
+      {type:'coffee',e:'☕',w:28,h:28,spd:2.0,pts:8,wt:1},
+    ],
+  },
+  home:{
+    name:'🏠 家里',
+    emoji:'🌙',
+    desc:'深夜紧急内急，黑暗中摸索去厕所！',
+    time:120,
+    spdMult:2.0,
+    spawnInterval:650,
+    darkMode:true,
+    wind:false,
+    wave:false,
+    poolP:[
+      {type:'paper',e:'🧻',w:30,h:30,spd:3.0,pts:15,wt:3},
+      {type:'laxative',e:'💊',w:26,h:26,spd:2.5,pts:20,wt:2},
+      {type:'torch',e:'🔦',w:28,h:28,spd:2.2,pts:0,wt:2},
+      {type:'star',e:'⭐',w:28,h:28,spd:2.0,pts:0,wt:1},
+      {type:'cat',e:'🐱',w:32,h:32,spd:3.0,pts:-20,wt:2},
+      {type:'plug',e:'🔌',w:28,h:28,spd:2.8,pts:-8,wt:2},
+      {type:'toilet',e:'🚽',w:38,h:38,spd:3.8,pts:-99,wt:2},
+    ],
+    poolT:[
+      {type:'poop',e:'💩',w:36,h:36,spd:3.2,pts:10,wt:4},
+      {type:'paper',e:'🧻',w:30,h:30,spd:2.8,pts:-10,wt:2},
+      {type:'cat',e:'🐱',w:32,h:32,spd:3.0,pts:-5,wt:2},
+      {type:'torch',e:'🔦',w:28,h:28,spd:2.0,pts:5,wt:1},
+      {type:'plug',e:'🔌',w:28,h:28,spd:2.5,pts:0,wt:1},
+    ],
+  },
+};
+
+// ── 游戏状态 ──────────────────────────────────────
+var currentScene='park';
+var mode='poop';
+var score=0,tLeft=30,running=false;
+var px=180,py=360,pw=40,ph=44,spd=5,baseSpd=5;
+var fallers=[],spawnT=0,animId=null,cntId=null;
+var keys={left:false,right:false};
+var windOffset=0,windDir=1,windTimer=0;
+var waveTimer=0,waveActive=false;
+var darkVisible=true; // torch active
+var invincible=false; // star active
+var slowActive=false; // phone/cat slow
+var doubleScore=false; // bird double
+var effectTimers=[];
+
+// ── 音效 ──────────────────────────────────────────
+var AudioCtx=window.AudioContext||window.webkitAudioContext;
+var actx=null;
+function getACtx(){if(!actx)actx=new AudioCtx();if(actx.state==='suspended')actx.resume();return actx;}
+function playTone(freqs,dur,type,vol){
+  try{var ac=getACtx();var g=ac.createGain();g.gain.setValueAtTime(vol||0.25,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+dur);g.connect(ac.destination);freqs.forEach(function(f,i){var o=ac.createOscillator();o.type=type||'sine';o.frequency.setValueAtTime(f,ac.currentTime+i*(dur/freqs.length));o.connect(g);o.start(ac.currentTime+i*(dur/freqs.length));o.stop(ac.currentTime+dur+0.05);});}catch(e){}
+}
+function sfxPlop(){try{var ac=getACtx();var o=ac.createOscillator();var g=ac.createGain();o.type='sine';o.frequency.setValueAtTime(280,ac.currentTime);o.frequency.exponentialRampToValueAtTime(60,ac.currentTime+0.18);g.gain.setValueAtTime(0.45,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.22);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+0.25);}catch(e){}}
+function sfxFlush(){try{var ac=getACtx();var buf=ac.createBuffer(1,ac.sampleRate*0.8,ac.sampleRate);var data=buf.getChannelData(0);for(var i=0;i<data.length;i++)data[i]=(Math.random()*2-1);var src=ac.createBufferSource();src.buffer=buf;var f=ac.createBiquadFilter();f.type='bandpass';f.frequency.setValueAtTime(800,ac.currentTime);f.frequency.exponentialRampToValueAtTime(200,ac.currentTime+0.7);f.Q.value=0.8;var g=ac.createGain();g.gain.setValueAtTime(0.35,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.8);src.connect(f);f.connect(g);g.connect(ac.destination);src.start();src.stop(ac.currentTime+0.85);}catch(e){}}
+function sfxCollect(){playTone([523,784,1047],0.25,'triangle',0.22);}
+function sfxSpeed(){try{var ac=getACtx();var o=ac.createOscillator();var g=ac.createGain();o.type='sawtooth';o.frequency.setValueAtTime(200,ac.currentTime);o.frequency.exponentialRampToValueAtTime(900,ac.currentTime+0.3);g.gain.setValueAtTime(0.18,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.35);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+0.38);}catch(e){}}
+function sfxBlock(){try{var ac=getACtx();var o=ac.createOscillator();var g=ac.createGain();o.type='square';o.frequency.setValueAtTime(120,ac.currentTime);o.frequency.exponentialRampToValueAtTime(60,ac.currentTime+0.15);g.gain.setValueAtTime(0.28,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.2);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+0.22);}catch(e){}}
+function sfxStart(){playTone([330,440,523,659],0.4,'triangle',0.18);}
+function sfxWin(){playTone([523,659,784,1047,1047],0.6,'triangle',0.22);}
+function sfxBoss(){playTone([200,180,160,140,120],0.5,'square',0.35);}
+function sfxStar(){playTone([800,1000,1200,1000,800],0.4,'triangle',0.2);}
+function sfxBird(){playTone([600,800,1000],0.3,'sine',0.2);}
+
+// ── 背景绘制 ──────────────────────────────────────
+function drawBgPark(){
+  // 天空
+  bx.fillStyle='#b8e8f0';bx.fillRect(0,0,W,H);
+  // 草地
+  bx.fillStyle='#6ab840';bx.fillRect(0,260,W,H-260);
+  // 草地纹理
+  bx.fillStyle='#5aa030';
+  for(var gx=0;gx<W;gx+=20){bx.fillRect(gx,260,10,H-260);}
+  // 小路
+  bx.fillStyle='#d4b880';bx.fillRect(160,260,80,H-260);
+  bx.strokeStyle='#c0a060';bx.lineWidth=1;
+  bx.setLineDash([12,8]);
+  bx.beginPath();bx.moveTo(200,260);bx.lineTo(200,H);bx.stroke();
+  bx.setLineDash([]);
+  // 树1
+  drawTree(bx,60,200,50);
+  drawTree(bx,320,190,45);
+  drawTree(bx,150,220,35);
+  // 公共厕所小屋
+  bx.fillStyle='#e8d8b0';bx.fillRect(280,140,100,120);
+  bx.fillStyle='#c0784a';bx.fillRect(275,130,110,18);
+  bx.fillStyle='#8ab8e0';bx.fillRect(295,158,28,30);bx.fillRect(338,158,28,30);
+  bx.fillStyle='#c08050';bx.fillRect(312,188,16,32);
+  bx.fillStyle='#a06838';bx.beginPath();bx.arc(320,196,3,0,Math.PI*2);bx.fill();
+  bx.fillStyle='#4a3020';bx.font='bold 12px sans-serif';bx.textAlign='center';
+  bx.fillText('厕所',330,175);bx.textAlign='left';
+  // 长椅
+  bx.fillStyle='#c09060';bx.fillRect(80,240,60,10);
+  bx.fillStyle='#a07840';bx.fillRect(84,250,4,12);bx.fillRect(132,250,4,12);
+  // 云
+  drawCloud(bx,80,40);drawCloud(bx,240,25);drawCloud(bx,340,55);
+  // 地面
+  bx.fillStyle='#c8b870';bx.fillRect(0,H-40,W,40);
+  bx.strokeStyle='#b0a060';bx.lineWidth=1;
+  for(var px2=0;px2<W;px2+=30){bx.strokeRect(px2,H-40,30,40);}
+}
+
+function drawTree(ctx,x,y,r){
+  ctx.fillStyle='#4a7020';ctx.beginPath();ctx.arc(x,y-r*0.3,r,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#3a5818';ctx.beginPath();ctx.arc(x-r*0.3,y,r*0.8,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(x+r*0.3,y,r*0.8,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#6a4020';ctx.fillRect(x-6,y+r*0.5,12,r*0.8);
+}
+function drawCloud(ctx,x,y){
+  ctx.fillStyle='rgba(255,255,255,0.85)';
+  ctx.beginPath();ctx.arc(x,y,18,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(x+20,y+4,14,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(x-16,y+6,12,0,Math.PI*2);ctx.fill();
+}
+
+function drawBgOffice(){
+  // 墙
+  bx.fillStyle='#e8e0d0';bx.fillRect(0,0,W,H);
+  // 格子间隔板
+  bx.fillStyle='#c8c0b0';
+  for(var ox=0;ox<W;ox+=130){bx.fillRect(ox,0,6,H);}
+  // 地板
+  bx.fillStyle='#909080';bx.fillRect(0,310,W,H-310);
+  bx.strokeStyle='#808070';bx.lineWidth=1;
+  for(var fx=0;fx<W;fx+=40)bx.strokeRect(fx,310,40,H-310);
+  // 办公桌
+  drawDesk(bx,20,230,110,60);
+  drawDesk(bx,270,220,110,60);
+  // 椅子
+  bx.fillStyle='#404048';bx.fillRect(55,290,40,20);bx.fillRect(65,310,5,20);bx.fillRect(85,310,5,20);
+  bx.fillRect(305,285,40,20);bx.fillRect(315,305,5,20);bx.fillRect(335,305,5,20);
+  // 电脑屏幕
+  bx.fillStyle='#202840';bx.fillRect(35,200,60,35);bx.fillStyle='#304060';bx.fillRect(38,203,54,28);
+  bx.fillStyle='#202840';bx.fillRect(283,192,60,35);bx.fillStyle='#304060';bx.fillRect(286,195,54,28);
+  // 厕所门
+  bx.fillStyle='#b09070';bx.fillRect(170,200,60,110);
+  bx.strokeStyle='#907050';bx.lineWidth=2;bx.strokeRect(170,200,60,110);
+  bx.fillStyle='#c0b090';bx.font='bold 11px sans-serif';bx.textAlign='center';
+  bx.fillText('🚻',200,265);bx.textAlign='left';
+  bx.fillStyle='#806040';bx.beginPath();bx.arc(222,255,4,0,Math.PI*2);bx.fill();
+  // 荧光灯
+  bx.fillStyle='#ffffd0';bx.fillRect(60,0,80,8);bx.fillRect(260,0,80,8);
+  bx.strokeStyle='rgba(255,255,200,0.15)';
+  for(var ly=8;ly<60;ly+=4){bx.lineWidth=ly/4;bx.beginPath();bx.moveTo(60,0);bx.lineTo(60,ly);bx.moveTo(140,0);bx.lineTo(140,ly);bx.stroke();}
+  // 天花板
+  bx.fillStyle='#d0c8b8';bx.fillRect(0,0,W,16);
+}
+function drawDesk(ctx,x,y,w,h){
+  ctx.fillStyle='#b89060';ctx.fillRect(x,y,w,h);
+  ctx.fillStyle='#c8a070';ctx.fillRect(x,y,w,8);
+  ctx.strokeStyle='#a07848';ctx.lineWidth=1;ctx.strokeRect(x,y,w,h);
+}
+
+function drawBgHome(){
+  // 黑暗卧室
+  bx.fillStyle='#0e0c18';bx.fillRect(0,0,W,H);
+  // 窗户月光
+  bx.fillStyle='#1a2040';bx.fillRect(280,20,90,80);
+  bx.strokeStyle='#304080';bx.lineWidth=2;bx.strokeRect(280,20,90,80);
+  bx.strokeRect(325,20,1,80);bx.strokeRect(280,60,90,1);
+  // 月亮
+  bx.fillStyle='#e8e4c0';bx.beginPath();bx.arc(355,55,20,0,Math.PI*2);bx.fill();
+  bx.fillStyle='#1a2040';bx.beginPath();bx.arc(363,50,16,0,Math.PI*2);bx.fill();
+  // 床
+  bx.fillStyle='#3a2a1a';bx.fillRect(10,140,160,140);
+  bx.fillStyle='#5a4030';bx.fillRect(10,140,160,20);
+  bx.fillStyle='#e8d8c8';bx.fillRect(20,165,140,80);
+  bx.fillStyle='#c8b8a8';bx.fillRect(20,165,140,20);
+  // 枕头
+  bx.fillStyle='#f0e8e0';
+  rrect(bx,30,168,50,22,6);bx.fill();
+  rrect(bx,100,168,50,22,6);bx.fill();
+  // 地板
+  bx.fillStyle='#1a1208';bx.fillRect(0,320,W,H-320);
+  bx.strokeStyle='#251a0e';bx.lineWidth=1;
+  for(var fx=0;fx<W;fx+=40)bx.strokeRect(fx,320,40,H-320);
+  // 厕所方向指示(暗光)
+  bx.fillStyle='rgba(60,80,120,0.4)';bx.fillRect(0,H-50,30,50);
+  bx.fillStyle='rgba(80,100,140,0.3)';bx.font='10px sans-serif';bx.textAlign='center';
+  bx.fillText('厕所',15,H-20);bx.textAlign='left';
+  // 衣柜
+  bx.fillStyle='#2a1e10';bx.fillRect(220,100,120,200);
+  bx.strokeStyle='#3a2a18';bx.lineWidth=1;bx.strokeRect(220,100,120,200);
+  bx.strokeRect(220,100,60,200);
+  bx.fillStyle='#4a3420';bx.beginPath();bx.arc(272,198,4,0,Math.PI*2);bx.fill();
+  bx.beginPath();bx.arc(332,198,4,0,Math.PI*2);bx.fill();
+}
+
+function drawDarkOverlay(){
+  if(!SCENES[currentScene].darkMode) return;
+  dx.clearRect(0,0,W,H);
+
+  var cx2=px+pw/2, cy2=py+ph/2;
+
+  if(darkVisible){
+    // 🔦 手电筒激活：大范围照亮，边缘柔和渐变
+    // 先铺一层半透明夜色底（不完全遮住，保留轮廓感）
+    dx.fillStyle='rgba(2,4,18,0.55)';
+    dx.fillRect(0,0,W,H);
+
+    // 手电筒主光圈：完全透明 → 半透明 → 夜色
+    var grd=dx.createRadialGradient(cx2,cy2,0,cx2,cy2,200);
+    grd.addColorStop(0,'rgba(0,0,0,0)');       // 中心完全透明
+    grd.addColorStop(0.45,'rgba(0,0,0,0)');    // 宽敞明亮区
+    grd.addColorStop(0.75,'rgba(2,4,18,0.55)');// 柔和过渡
+    grd.addColorStop(1,'rgba(2,4,18,0.92)');   // 边缘变暗
+    dx.globalCompositeOperation='source-over';
+    dx.fillStyle=grd;
+    dx.fillRect(0,0,W,H);
+
+    // 手电筒暖光晕（黄色调，增加临场感）
+    var warmGrd=dx.createRadialGradient(cx2,cy2,0,cx2,cy2,130);
+    warmGrd.addColorStop(0,'rgba(255,240,180,0.06)');
+    warmGrd.addColorStop(0.5,'rgba(255,220,120,0.03)');
+    warmGrd.addColorStop(1,'rgba(0,0,0,0)');
+    dx.fillStyle=warmGrd;
+    dx.fillRect(0,0,W,H);
+
+    // 月光从窗户透进来（右上角固定光斑，给场景增加层次）
+    var moonGrd=dx.createRadialGradient(340,50,0,340,50,90);
+    moonGrd.addColorStop(0,'rgba(180,200,255,0.18)');
+    moonGrd.addColorStop(0.6,'rgba(120,150,220,0.06)');
+    moonGrd.addColorStop(1,'rgba(0,0,0,0)');
+    dx.fillStyle=moonGrd;
+    dx.fillRect(0,0,W,H);
+
+  } else {
+    // 🌑 无手电筒：只有微弱月光，能看到轮廓但很暗
+    dx.fillStyle='rgba(2,4,18,0.82)';
+    dx.fillRect(0,0,W,H);
+
+    // 保留月光窗户透光
+    var moonGrd2=dx.createRadialGradient(340,50,0,340,50,100);
+    moonGrd2.addColorStop(0,'rgba(160,180,255,0.22)');
+    moonGrd2.addColorStop(0.5,'rgba(100,130,200,0.08)');
+    moonGrd2.addColorStop(1,'rgba(0,0,0,0)');
+    dx.fillStyle=moonGrd2;
+    dx.fillRect(0,0,W,H);
+
+    // 玩家身边极微弱的环境光（让玩家能看到自己）
+    var dimGrd=dx.createRadialGradient(cx2,cy2,0,cx2,cy2,70);
+    dimGrd.addColorStop(0,'rgba(0,0,0,0)');
+    dimGrd.addColorStop(0.4,'rgba(2,4,18,0.2)');
+    dimGrd.addColorStop(1,'rgba(2,4,18,0.0)');
+    dx.fillStyle=dimGrd;
+    dx.fillRect(0,0,W,H);
+  }
+  dx.globalCompositeOperation='source-over';
+}
+
+function drawBg(){
+  bx.clearRect(0,0,W,H);
+  if(currentScene==='park') drawBgPark();
+  else if(currentScene==='office') drawBgOffice();
+  else drawBgHome();
+}
+
+// ── 道具加权随机 ──────────────────────────────────
+function weightedPick(pool){
+  var total=0;
+  for(var i=0;i<pool.length;i++) total+=pool[i].wt;
+  var r=Math.random()*total;
+  for(var i=0;i<pool.length;i++){r-=pool[i].wt;if(r<=0)return pool[i];}
+  return pool[pool.length-1];
+}
+
+// ── 道具生成 ──────────────────────────────────────
+function spawn(){
+  var sc=SCENES[currentScene];
+  var pool=mode==='poop'?sc.poolP:sc.poolT;
+  var src=weightedPick(pool);
+  var t={type:src.type,e:src.e,w:src.w,h:src.h,pts:src.pts};
+  t.x=16+Math.random()*(W-60);
+  t.y=-44;
+  t.vy=(src.spd+(score/400))*sc.spdMult;
+  t.vx=0;
+  fallers.push(t);
+}
+
+// ── 浮动提示 ──────────────────────────────────────
+function pill(txt,x,y,col){
+  var el=document.createElement('div');
+  el.className='pill';
+  el.style.left=x+'px';el.style.top=y+'px';
+  if(col) el.style.color=col;
+  el.textContent=txt;
+  uilayer.appendChild(el);
+  setTimeout(function(){el.remove();},850);
+}
+function badge(txt){
+  var el=document.createElement('div');
+  el.className='status-badge';
+  el.textContent=txt;
+  uilayer.appendChild(el);
+  setTimeout(function(){el.remove();},1400);
+}
+
+// ── 特效计时器管理 ─────────────────────────────────
+function addEffect(prop,val,reset,duration){
+  setGameVar(prop,val);
+  var tid=setTimeout(function(){setGameVar(prop,reset);},duration);
+  effectTimers.push(tid);
+}
+function setGameVar(prop,val){
+  if(prop==='spd') spd=val;
+  else if(prop==='darkVisible') darkVisible=val;
+  else if(prop==='invincible') invincible=val;
+  else if(prop==='doubleScore') doubleScore=val;
+  else if(prop==='running') running=val;
+  else if(prop==='slowActive') slowActive=val;
+}
+function clearEffects(){
+  effectTimers.forEach(function(t){clearTimeout(t);});
+  effectTimers=[];
+  darkVisible=true;invincible=false;slowActive=false;doubleScore=false;
+  spd=baseSpd;
+}
+
+// ── 碰撞检测 ──────────────────────────────────────
+function hit(f){
+  return f.x<px+pw-6&&f.x+f.w>px+6&&f.y<py+ph-4&&f.y+f.h>py+4;
+}
+
+// ── 触发道具效果 ──────────────────────────────────
+function handleItem(f,vx,vy){
+  var add=0;
+  switch(f.type){
+    case 'boss':
+      if(currentScene==='office'&&!invincible){sfxBoss();endGame(false,'被老板抓到了！💼 拉屎被终止！');return false;}
+      else if(invincible){pill('无敌挡住！',vx,vy,'#f0c000');break;}
+      break;
+    case 'toilet':
+      if(!invincible){sfxFlush();endGame(false,'被马桶吸走了！💀');return false;}
+      else{pill('无敌挡住！',vx,vy,'#f0c000');break;}
+    case 'paper':
+      if(mode==='poop'){add=f.pts;sfxCollect();pill('+'+add,vx,vy,'#1a6000');}
+      else{add=f.pts;sfxBlock();pill(f.pts+'🧻',vx,vy,'#b02000');}
+      break;
+    case 'poop':
+      add=doubleScore?f.pts*2:f.pts;sfxPlop();
+      pill(doubleScore?'×2 +'+add:'+'+add,vx,vy,'#1a6000');
+      break;
+    case 'laxative':
+      add=f.pts;sfxSpeed();spd=baseSpd*2;
+      addEffect('spd',baseSpd*2,baseSpd,2800);
+      pill('💊加速！+'+add,vx,vy,'#c04000');badge('💊 泻药加速3秒！');
+      break;
+    case 'leaf':
+      add=f.pts;sfxCollect();pill('+'+add,vx,vy,'#1a6000');break;
+    case 'coffee':
+      add=f.pts;sfxCollect();pill('☕+'+add,vx,vy,'#703000');break;
+    case 'bird':
+      if(mode==='poop'){
+        sfxBird();doubleScore=true;
+        addEffect('doubleScore',true,false,3000);
+        pill('🐦双倍得分！',vx,vy,'#1040c0');badge('🐦 双倍得分3秒！');
+      } else {
+        add=f.pts;sfxCollect();pill('+'+add,vx,vy,'#1a6000');
+      }
+      break;
+    case 'phone':
+      add=f.pts;sfxBlock();
+      if(mode==='poop'){
+        spd=baseSpd*0.4;addEffect('spd',baseSpd*0.4,baseSpd,2500);
+        pill('📱老板来电！'+add,vx,vy,'#b02000');badge('📱 被老板打扰，减速！');
+      } else {
+        pill('📱'+add,vx,vy,'#b02000');
+      }
+      break;
+    case 'mute':
+      sfxCollect();
+      // 取消下一次phone效果（简化：给短暂加速）
+      spd=baseSpd*1.5;addEffect('spd',baseSpd*1.5,baseSpd,2000);
+      pill('🔕免打扰！',vx,vy,'#1040a0');badge('🔕 免打扰模式！');
+      break;
+    case 'torch':
+      sfxStar();darkVisible=true;
+      addEffect('darkVisible',true,false,5000);
+      pill('🔦看清了！',vx,vy,'#c0a000');badge('🔦 手电筒！5秒视野');
+      break;
+    case 'star':
+      sfxStar();invincible=true;
+      addEffect('invincible',true,false,3000);
+      pill('⭐无敌！',vx,vy,'#c0a000');badge('⭐ 无敌3秒！');
+      break;
+    case 'cat':
+      add=f.pts;sfxBlock();
+      running=false;
+      addEffect('running',false,true,1800);
+      pill('🐱绊倒！'+add,vx,vy,'#802000');badge('🐱 猫咪绊倒，僵硬！');
+      break;
+    case 'plug':
+      if(!invincible){add=f.pts;sfxBlock();pill(add+'🔌',vx,vy,'#802000');}
+      else{pill('无敌！',vx,vy,'#f0c000');}
+      break;
+  }
+  var pts=Math.max(0,add);
+  score=Math.max(0,score+add);
+  scEl.textContent=score;
+  return true;
+}
+
+// ── 主更新 ────────────────────────────────────────
+function update(dt){
+  if(!running) return;
+  var sc=SCENES[currentScene];
+
+  // 移动
+  var curSpd=slowActive?baseSpd*0.5:spd;
+  if(keys.left) px=Math.max(0,px-curSpd);
+  if(keys.right) px=Math.min(W-pw-4,px+curSpd);
+
+  // 风效果（公园）
+  if(sc.wind){
+    windTimer+=dt;
+    if(windTimer>3000){windTimer=0;windDir*=-1;}
+    windOffset=Math.sin(windTimer/1200)*1.5*windDir;
+    for(var i=0;i<fallers.length;i++) fallers[i].vx=windOffset;
+  }
+
+  // 波次（办公室）：每10秒额外刷3个道具
+  if(sc.wave){
+    waveTimer+=dt;
+    if(waveTimer>10000){
+      waveTimer=0;
+      badge('📢 开会提醒！障碍来袭！');
+      for(var w=0;w<3;w++){
+        setTimeout(function(){if(running)spawn();},w*200);
+      }
+    }
+  }
+
+  // 暗视野更新（家里）
+  if(sc.darkMode) drawDarkOverlay();
+
+  // 生成道具
+  spawnT+=dt;
+  if(spawnT>sc.spawnInterval){spawn();spawnT=0;}
+
+  // 道具碰撞
+  for(var i=fallers.length-1;i>=0;i--){
+    var f=fallers[i];
+    f.y+=f.vy;
+    f.x+=f.vx||0;
+    f.x=Math.max(-10,Math.min(W-f.w+10,f.x));
+    if(f.y>H+30){fallers.splice(i,1);continue;}
+    if(hit(f)){
+      var vx2=Math.round(f.x),vy2=Math.round(f.y-20);
+      fallers.splice(i,1);
+      var cont=handleItem(f,vx2,vy2);
+      if(!cont) return;
+    }
+  }
+}
+
+// ── 渲染循环 ──────────────────────────────────────
+var last=0;
+function loop(ts){
+  var dt=ts-last;last=ts;
+  cx.clearRect(0,0,W,H);
+  cx.font='28px serif';
+  for(var i=0;i<fallers.length;i++){
+    var f=fallers[i];
+    if(invincible&&Math.floor(ts/100)%2===0) cx.globalAlpha=0.5;
+    cx.fillText(f.e,f.x,f.y+f.h);
+    cx.globalAlpha=1;
+  }
+  cx.font='36px serif';
+  if(invincible&&Math.floor(ts/80)%2===0) cx.globalAlpha=0.6;
+  if(mode==='poop') cx.fillText('💩',px,py+ph);
+  else cx.fillText('🚽',px,py+ph);
+  cx.globalAlpha=1;
+  update(dt);
+  animId=requestAnimationFrame(loop);
+}
+
+// ── 游戏流程 ──────────────────────────────────────
+function selectScene(s){
+  currentScene=s;
+  var sc=SCENES[s];
+  scenescreen.style.display='none';
+  modescreen.style.display='flex';
+  document.getElementById('mode-scene-e').textContent=sc.emoji;
+  document.getElementById('mode-scene-name').textContent=sc.name;
+  document.getElementById('mode-scene-desc').textContent=sc.desc+'\n💩 粑粑：收集道具，躲避马桶\n🚽 马桶：接住粑粑，越多越好';
+}
+
+function fmtTime(s){var m=Math.floor(s/60);var ss=s%60;return m+':'+(ss<10?'0':'')+ss;}
+
+function startGame(m){
+  var sc=SCENES[currentScene];
+  mode=m;score=0;tLeft=sc.time;fallers=[];spawnT=0;waveTimer=0;windTimer=0;
+  px=180;py=360;baseSpd=5;spd=5;
+  clearEffects();
+  darkVisible=!sc.darkMode; // 家里初始看不见
+  modescreen.style.display='none';
+  overscreen.style.display='none';
+  sceneLabel.textContent=sc.name;
+  mdEl.textContent=m==='poop'?'💩':'🚽';
+  scEl.textContent='0';tiEl.textContent=fmtTime(sc.time);
+  hintEl.textContent=m==='poop'?'躲避🚽，收集道具！':'接住💩越多越好！';
+  drawBg();
+  if(sc.darkMode){darkVisible=false;drawDarkOverlay();}
+  else{dx.clearRect(0,0,W,H);}
+  running=true;sfxStart();
+  if(animId) cancelAnimationFrame(animId);
+  last=performance.now();
+  animId=requestAnimationFrame(loop);
+  if(cntId) clearInterval(cntId);
+  cntId=setInterval(function(){
+    tLeft--;tiEl.textContent=fmtTime(tLeft);
+    if(tLeft<=0){clearInterval(cntId);endGame(true);}
+  },1000);
+}
+
+function endGame(timeout,msg){
+  running=false;clearEffects();
+  cancelAnimationFrame(animId);
+  if(cntId) clearInterval(cntId);
+  dx.clearRect(0,0,W,H);
+  var oe=document.getElementById('oe');
+  var ot=document.getElementById('ot');
+  var om=document.getElementById('om');
+  if(timeout){
+    sfxWin();
+    var star=score>=200?'🏆':score>=100?'🎉':'😅';
+    oe.textContent=star;
+    ot.textContent=score>=200?'粑粑大师！':score>=100?'厉害啊！':'加油哦～';
+    om.textContent='场景：'+SCENES[currentScene].name+'\n最终得分：'+score+'分';
+  } else {
+    sfxFlush();
+    oe.textContent='😱';ot.textContent='游戏结束！';
+    om.textContent=(msg||'发生意外！')+'\n得分：'+score+'分';
+  }
+  overscreen.style.display='flex';
+}
+
+function showSceneScreen(){
+  overscreen.style.display='none';
+  modescreen.style.display='none';
+  scenescreen.style.display='flex';
+  running=false;
+  if(animId) cancelAnimationFrame(animId);
+  if(cntId) clearInterval(cntId);
+  cx.clearRect(0,0,W,H);dx.clearRect(0,0,W,H);
+  sceneLabel.textContent='💩 粑粑大作战';
+  // 显示默认背景
+  bx.clearRect(0,0,W,H);
+  bx.fillStyle='#1a1a2e';bx.fillRect(0,0,W,H);
+}
+
+// ── 按钮事件 ──────────────────────────────────────
+document.getElementById('btn-park').addEventListener('click',function(){selectScene('park');});
+document.getElementById('btn-office').addEventListener('click',function(){selectScene('office');});
+document.getElementById('btn-home').addEventListener('click',function(){selectScene('home');});
+document.getElementById('btn-poop').addEventListener('click',function(){startGame('poop');});
+document.getElementById('btn-toilet').addEventListener('click',function(){startGame('toilet');});
+document.getElementById('btn-restart').addEventListener('click',function(){startGame(mode);});
+document.getElementById('btn-change-scene').addEventListener('click',function(){showSceneScreen();});
+document.getElementById('btn-back-scene').addEventListener('click',function(){modescreen.style.display='none';scenescreen.style.display='flex';});
+
+bindBtn(document.getElementById('btn-left'),function(){keys.left=true;},function(){keys.left=false;});
+bindBtn(document.getElementById('btn-right'),function(){keys.right=true;},function(){keys.right=false;});
+
+document.addEventListener('keydown',function(e){
+  if(e.key==='ArrowLeft') keys.left=true;
+  if(e.key==='ArrowRight') keys.right=true;
+});
+document.addEventListener('keyup',function(e){
+  if(e.key==='ArrowLeft') keys.left=false;
+  if(e.key==='ArrowRight') keys.right=false;
+});
+
+// 防止触摸时页面滚动
+document.getElementById('scene').addEventListener('touchstart',function(e){e.preventDefault();},{passive:false});
+document.getElementById('scene').addEventListener('touchmove',function(e){e.preventDefault();},{passive:false});
+document.getElementById('ctrlbar').addEventListener('touchstart',function(e){e.preventDefault();},{passive:false});
+document.getElementById('ctrlbar').addEventListener('touchmove',function(e){e.preventDefault();},{passive:false});
+
+// 按钮同时支持 touch 事件（部分安卓机 pointer 事件不稳定）
+function bindBtn(el, onDown, onUp){
+  el.addEventListener('pointerdown',onDown);
+  el.addEventListener('pointerup',onUp);
+  el.addEventListener('pointerleave',onUp);
+  el.addEventListener('pointercancel',onUp);
+  el.addEventListener('touchstart',function(e){e.preventDefault();onDown();},{passive:false});
+  el.addEventListener('touchend',function(e){e.preventDefault();onUp();},{passive:false});
+  el.addEventListener('touchcancel',function(e){e.preventDefault();onUp();},{passive:false});
+}
+
+// 初始化
+bx.fillStyle='#1a1a2e';bx.fillRect(0,0,W,H);
+</script>
+</body>
+</html>
