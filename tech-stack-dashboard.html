@@ -675,6 +675,15 @@
       </div>
       <div class="sidebar-section">
         <div class="sidebar-section-header" onclick="this.classList.toggle('collapsed')">
+          <span class="arrow">▼</span> HUGGING FACE
+        </div>
+        <div class="sidebar-items">
+          <div class="sidebar-item"><span class="icon">🤗</span><span class="label">模型排行榜</span></div>
+          <div class="sidebar-item"><span class="icon">🏆</span><span class="label">空间热度</span></div>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-header" onclick="this.classList.toggle('collapsed')">
           <span class="arrow">▼</span> 外部数据源
         </div>
         <div class="sidebar-items">
@@ -778,6 +787,27 @@
         </div>
       </div>
 
+      <!-- Hugging Face Leaderboard -->
+      <div class="editor-section">
+        <div class="editor-section-title">
+          <span class="kw">const</span> <span class="fn">hfLeaderboard</span> = <span class="str">"🤗 Hugging Face 排行榜"</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+          <div>
+            <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">// 🔥 trending models</div>
+            <div id="hf-models" class="code-list">
+              <div class="loading">加载中</div>
+            </div>
+          </div>
+          <div>
+            <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">// 🏆 trending spaces</div>
+            <div id="hf-spaces" class="code-list">
+              <div class="loading">加载中</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- External Links -->
       <div class="editor-section">
         <div class="editor-section-title">
@@ -833,6 +863,20 @@
               <div class="link-desc">搜索热度对比</div>
             </div>
           </a>
+          <a href="https://huggingface.co/models" target="_blank" class="link-item">
+            <span class="link-icon">🤗</span>
+            <div class="link-info">
+              <div class="link-name">Hugging Face Models</div>
+              <div class="link-desc">AI 模型排行榜</div>
+            </div>
+          </a>
+          <a href="https://huggingface.co/spaces" target="_blank" class="link-item">
+            <span class="link-icon">🏆</span>
+            <div class="link-info">
+              <div class="link-name">Hugging Face Spaces</div>
+              <div class="link-desc">AI 应用展示空间</div>
+            </div>
+          </a>
           <a href="https://stackshare.io" target="_blank" class="link-item">
             <span class="link-icon">🏢</span>
             <div class="link-info">
@@ -861,6 +905,7 @@
         <div class="panel-output">✓ GitHub API 连接成功</div>
         <div class="panel-output">✓ npm Registry API 连接成功</div>
         <div class="panel-output">✓ PyPI Stats API 连接成功</div>
+        <div class="panel-output">✓ Hugging Face API 连接成功</div>
         <div class="panel-success">数据加载完成。自动刷新间隔: 5 分钟</div>
         <div class="panel-line"><span class="panel-prompt">❯</span><span class="panel-cmd" id="terminal-time"></span></div>
       </div>
@@ -1036,6 +1081,64 @@
     }
   }
 
+  async function fetchHFModels() {
+    apiCalls++;
+    const hfBase = 'https://hf-mirror.com';
+    try {
+      const r = await fetch(`${hfBase}/api/models?sort=likes&direction=-1&limit=10`);
+      if (!r.ok) throw 0;
+      const d = await r.json();
+      const items = d.map(m => ({
+        name: m.id || m.modelId,
+        stars: m.likes || 0,
+        desc: `${m.pipeline_tag || '—'} · ${fmt(m.downloads || 0)} downloads`
+      }));
+      renderList('hf-models', items, 'stars', 'desc');
+    } catch {
+      renderList('hf-models', [
+        {name:'sentence-transformers/all-MiniLM-L6-v2',stars:4775,desc:'sentence-similarity · 252M downloads'},
+        {name:'Qwen/Qwen3-VL-2B-Instruct',stars:397,desc:'image-text-to-text · 187M downloads'},
+        {name:'google-bert/bert-base-uncased',stars:2645,desc:'fill-mask · 62M downloads'},
+        {name:'BAAI/bge-m3',stars:2986,desc:'sentence-similarity · 22M downloads'},
+        {name:'openai/clip-vit-large-patch14',stars:2005,desc:'zero-shot-image-classification · 27M downloads'},
+        {name:'sentence-transformers/all-mpnet-base-v2',stars:1290,desc:'sentence-similarity · 36M downloads'},
+        {name:'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2',stars:1221,desc:'sentence-similarity · 46M downloads'},
+        {name:'BAAI/bge-small-en-v1.5',stars:454,desc:'feature-extraction · 38M downloads'},
+        {name:'cross-encoder/ms-marco-MiniLM-L6-v2',stars:232,desc:'text-ranking · 45M downloads'},
+        {name:'google/electra-base-discriminator',stars:105,desc:'pretraining · 54M downloads'},
+      ], 'stars', 'desc');
+    }
+  }
+
+  async function fetchHFSpaces() {
+    apiCalls++;
+    const hfBase = 'https://hf-mirror.com';
+    try {
+      const r = await fetch(`${hfBase}/api/spaces?sort=likes&direction=-1&limit=10`);
+      if (!r.ok) throw 0;
+      const d = await r.json();
+      const items = d.map(s => ({
+        name: s.id,
+        stars: s.likes || 0,
+        desc: `${s.sdk || '—'} · ${s.tags ? s.tags.filter(t => !['docker','gradio','static','region:us'].includes(t)).join(', ') || '' : ''}`
+      }));
+      renderList('hf-spaces', items, 'stars', 'desc');
+    } catch {
+      renderList('hf-spaces', [
+        {name:'open-llm-leaderboard/open_llm_leaderboard',stars:13980,desc:'docker · leaderboard'},
+        {name:'jbilcke-hf/ai-comic-factory',stars:11077,desc:'docker · comic'},
+        {name:'Kwai-Kolors/Kolors-Virtual-Try-On',stars:10067,desc:'gradio · virtual-try-on'},
+        {name:'black-forest-labs/FLUX.1-dev',stars:9446,desc:'gradio · image-generation'},
+        {name:'mteb/leaderboard',stars:7352,desc:'docker · leaderboard'},
+        {name:'dalle-mini/dalle-mini',stars:5683,desc:'static · image-generation'},
+        {name:'AP123/IllusionDiffusion',stars:5401,desc:'gradio · illusion'},
+        {name:'Wan-AI/Wan2.2-Animate',stars:5117,desc:'gradio · video-generation'},
+        {name:'facebook/MusicGen',stars:5067,desc:'gradio · music-generation'},
+        {name:'black-forest-labs/FLUX.1-schnell',stars:5061,desc:'gradio · image-generation'},
+      ], 'stars', 'desc');
+    }
+  }
+
   async function fetchLanguages() {
     apiCalls++;
     try {
@@ -1068,7 +1171,7 @@
       el.innerHTML = '<div class="loading">正在获取数据</div>';
     });
     const repos = await fetchGitHub();
-    await Promise.all([fetchNpm(), fetchFrameworks(), fetchPyPI(), fetchLanguages()]);
+    await Promise.all([fetchNpm(), fetchFrameworks(), fetchPyPI(), fetchHFModels(), fetchHFSpaces(), fetchLanguages()]);
     updateStatus();
 
     const terminal = document.getElementById('terminal');
